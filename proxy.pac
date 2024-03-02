@@ -1,12 +1,12 @@
 function FindProxyForURL(url,host){
-     if (shExpMatch(url,"pad.iclass30.com/*")){
+     if (shExpMatch(host,"pad.iclass30.com")){
            return "PROXY note.ms:80";
      }
-      if (shExpMatch(url,"recordlog.iclass30.com/*")){
-            return "PROXY note.ms:80";
-      }
-       if (shExpMatch(url,"*.fundot.info/*")){
-             return "PROXY note.ms:80";
-       }
-        return "DIRECT";
+     if (shExpMatch(host,"recordlog.iclass30.com")){
+           return "PROXY note.ms:80";
+     }
+     if (shExpMatch(host,"*.fundot.info")){
+           return "PROXY note.ms:80";
+     }
+     return "DIRECT";
 }
