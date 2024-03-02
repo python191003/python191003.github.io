@@ -1,0 +1,12 @@
+功能FindProxyForURL(URL，主机){
+     如果 (shExpMatch(URL，"pad.iclass30.com/*")){
+           返回 "PROXY note.ms:80";
+     }
+      如果 (shExpMatch(URL，"recordlog.iclass30.com/*")){
+            返回 "PROXY note.ms:80";
+      }
+       如果 (shExpMatch(URL，"*.fundot.info/*")){
+             返回 "PROXY note.ms:80";
+       }
+        返回 "直接";
+}
