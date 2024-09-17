@@ -5,5 +5,5 @@ serverPort = 7000
 name = "CmdRunner"
 type = "tcp"
 localIP = "127.0.0.1"
-localPort = 22
+localPort = 8888
 remotePort = 9090
