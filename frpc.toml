@@ -5,8 +5,8 @@ serverPort = 7000
 name = "NormalRunner"
 type = "tcp"
 localIP = "127.0.0.1"
-localPort = 8888
-remotePort = 8888
+localPort = 8080
+remotePort = 8080
 
 [[proxies]]
 name = "CMDRunner"
