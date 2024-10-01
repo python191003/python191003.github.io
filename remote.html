@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Romote Controller</title>
+    <style>
+        #file-explorer {
+            width: 100%;
+            height: 800px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+            outline: none;
+            caret-color: transparent;
+        }
+
+        #file-explorer span {
+            display: block;
+            cursor: pointer;
+            padding: 3px;
+        }
+
+        #file-explorer span:hover {
+            background-color: #e0e0e0;
+        }
+
+        #next {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            border-radius: 7px;
+            background-color: #ffffff;
+        }
+
+        #break {
+            position: absolute;
+            top: 10px;
+            right: 50px;
+            width: 50px;
+            height: 30px;
+            border-radius: 7px;
+            background-color: #ffffff;
+            visibility: hidden;
+        }
+
+        #cmd-input {
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            width: 400px;
+            height: 200px;
+            visibility: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div id="file-explorer"></div>
+    <button id="next">C</button>
+    <button id="break">ESC</button>
+    <input id="cmd-input">
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const explorerDiv = document.getElementById('file-explorer');
+            const next = document.getElementById('next');
+            var currentPath = 'http://82.156.242.74:8080/fs/C:/'; // 默认请求路径
+            let timer;
+            var boardCache = "";
+
+            // 初始化加载目录
+            loadDirectory(currentPath);
+
+            function loadCommand() {
+                next.textContent = 'F';
+                explorerDiv.innerHTML = "";
+                if (/Mobile|Android|iPhone/i.test(navigator.userAgent)){
+                    const inputBox = document.getElementById('cmd-input');
+                    inputBox.style.visibility = 'visible';
+                    inputBox.style.width = window.innerWidth - 100 + 'px';
+                    explorerDiv.onclick = (e) => {
+                        e.preventDefault();
+                        inputBox.focus();
+                    }
+                    inputBox.onkeydown = function (e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            socket.send(inputBox.value);
+                            inputBox.value = "";
+                        }
+                    }
+                }else{
+                    explorerDiv.contentEditable = true;
+                }
+                explorerDiv.onkeydown = function (e) {
+                    e.preventDefault();
+                    const key = e.key;
+                    if (key === 'Enter') {
+                        socket.send(boardCache);
+                        boardCache = "";
+                        explorerDiv.innerHTML += "\n";
+                    }else if (key === 'Backspace') {
+                        if (boardCache.length > 0) {
+                            boardCache = boardCache.slice(0, -1);
+                            explorerDiv.innerHTML = explorerDiv.innerHTML.slice(0, -1);
+                        }
+                    }else if (key.length === 1){
+                        boardCache += key;
+                        explorerDiv.innerHTML += key;
+                    }
+                }
+                const socket = new WebSocket('ws://82.156.242.74:8080/ws');
+                socket.onopen = function () {
+                    socket.send('\u0001'+currentPath.split('/').slice(4).join('/'));
+                };
+                socket.addEventListener('message', event => {
+                    explorerDiv.innerHTML += event.data;
+                });
+                next.onclick = () => {
+                    loadDirectory(currentPath);
+                    explorerDiv.contentEditable = false;
+                    socket.send("\u0003");
+                    socket.close();
+                    if (/Mobile|Android|iPhone/i.test(navigator.userAgent)){
+                        inputBox.style.visibility = 'hidden';
+                    }
+                }
+            }
+
+            // 加载目录内容的函数
+            function loadDirectory(path) {
+                currentPath = path;
+                next.textContent = 'C';
+                next.onclick = loadCommand;
+                fetch(path)
+                    .then(response => response.json())
+                    .then(data => {
+                        explorerDiv.innerHTML = '';
+                        
+                        // 如果不是根目录，添加“返回上一级”功能
+                        if (path !== 'http://82.156.242.74:8080/fs/C:/') {
+                            const upSpan = document.createElement('span');
+                            upSpan.textContent = '../';
+                            upSpan.addEventListener('click', () => goUpOneLevel(path));
+                            explorerDiv.appendChild(upSpan);
+                        }
+
+                        // 遍历JSON数据并创建对应的span
+                        data.forEach(item => {
+                            const [type, name] = item;
+                            const entrySpan = document.createElement('span');
+                            entrySpan.textContent = type+"："+name;
+                            entrySpan.addEventListener('click', () => handleEntryClick(type, name, path));
+                            explorerDiv.appendChild(entrySpan);
+                        });
+                    });
+            }
+
+            // 处理点击条目
+            function handleEntryClick(type, name, path) {
+                const newPath = path + name + (type === 'D' ? '/' : '');
+
+                if (type === 'D') {
+                    loadDirectory(newPath); // 如果是目录，加载新目录内容
+                } else if (type === 'F') {
+                    fetch(newPath)
+                        .then(response => response.text())
+                        .then(content => {
+                            explorerDiv.innerHTML = content;
+                            explorerDiv.contentEditable = true;
+                            explorerDiv.focus();
+
+                            // 替换next为保存按钮
+                            next.textContent = 'S';
+                            next.onclick = () => {
+                                saveFile(newPath, explorerDiv.innerHTML);
+                                next.textContent = 'C';
+                            };
+                            const esc = document.getElementById('break');
+                            esc.style.visibility = 'visible';
+                            esc.onclick = () => {
+                                goUpOneLevel(newPath);
+                                esc.style.visibility = 'hidden';
+                                next.textContent = 'C';
+                            };
+                        });
+                }
+            }
+
+            // 返回上一级目录
+            function goUpOneLevel(path) {
+                const upPath = path.split('/').slice(0, path.endsWith('/')?-2:-1).join('/') + '/';
+                loadDirectory(upPath);
+                explorerDiv.contentEditable = false;
+            }
+
+            // 保存文件并返回上一级目录
+            function saveFile(filePath, content) {
+                fetch(`http://82.156.242.74:8080/edit${filePath}`, {
+                    method: 'POST',
+                    body: content
+                }).then(() => {
+                    goUpOneLevel(filePath);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
