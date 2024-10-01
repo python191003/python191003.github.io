@@ -6,11 +6,11 @@ name = "NormalRunner"
 type = "tcp"
 localIP = "127.0.0.1"
 localPort = 8080
-remotePort = 8080
+remotePort = 9998
 
 [[proxies]]
 name = "CMDRunner"
 type = "tcp"
 localIP = "127.0.0.1"
 localPort = 9090
-remotePort = 9090
+remotePort = 9999
