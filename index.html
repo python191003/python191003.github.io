@@ -1,12 +1,376 @@
-function FindProxyForURL(url,host){
-     if (shExpMatch(host,"pad.iclass30.com")){
-           return "PROXY note.ms:80";
-     }
-     if (shExpMatch(host,"recordlog.iclass30.com")){
-           return "PROXY note.ms:80";
-     }
-     if (shExpMatch(host,"*.fundot.info")){
-           return "PROXY note.ms:80";
-     }
-     return "DIRECT";
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录和管理页面</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .tab { display: none; }
+        .active-tab { display: block; }
+        label { display: inline-block; width: 100px; }
+        input { margin-bottom: 10px; }
+        .container { margin: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="tabs">
+        <button onclick="showTab('loginTab')">登录</button>
+        <button onclick="showTab('passwordTab')">修改密码</button>
+        <button onclick="showTab('avatarTab')">更换头像</button>
+        <button onclick="showTab('xxqTab')">学习墙</button>
+    </div>
+
+    <!-- 登录 Tab -->
+    <div id="loginTab" class="tab active-tab">
+        <h2>登录</h2>
+        <label>用户名*</label>
+        <input type="text" id="userName"><br>
+        <label>密码*</label>
+        <input type="text" id="password"><br>
+        <button onclick="login()">登录</button><br>
+        <label>Token:</label>
+        <input type="text" id="token" readonly><br>
+        <label>stuId:</label>
+        <input type="text" id="stuId" readonly><br>
+        <label>真实姓名:</label>
+        <input type="text" id="stuName" readonly><br>
+    </div>
+
+    <!-- 修改密码 Tab -->
+    <div id="passwordTab" class="tab">
+        <h2>修改密码</h2>
+        <label>Token</label>
+        <input type="text" id="pF_token"><br>
+        <label>密码</label>
+        <input type="text" id="pF_password"><br>
+        <label>stuId</label>
+        <input type="text" id="pF_stuId"><br>
+        <label>真实姓名</label>
+        <input type="text" id="pF_realName"><br>
+        <button onclick="changePassword()">修改密码</button>
+        <button onclick="setAllToPassword()">一键填写</button><br>
+        <label>状态:</label>
+        <input type="text" id="pF_state" readonly><br>
+    </div>
+
+    <!-- 更换头像 Tab -->
+    <div id="avatarTab" class="tab">
+        <h2>更换头像</h2>
+        <label>Token</label>
+        <input type="text" id="aF_token"><br>
+        <label>头像路径</label>
+        <input type="text" id="aF_filepath"><br>
+        <label>stuId</label>
+        <input type="text" id="aF_stuId"><br>
+        <label>schoolId</label>
+        <input type="text" id="aF_schoolId"><br>
+        <button onclick="changeAvatar()">修改头像</button>
+        <button onclick="setAllToAvatar()">一键填写</button><br>
+        <label>状态:</label>
+        <input type="text" id="aF_state" readonly><br>
+    </div>
+
+    <!-- 学习墙 Tab -->
+    <div id="xxqTab" class="tab">
+        <h2>学习墙</h2>
+        <div id="studywallResults"></div>
+            <label>stuId</label>
+            <input type="text" id="xF_stuId"><br>
+            <button onclick="setStuIdToList()">填写</button>
+            <button onclick="parseStudywallList()">解析该用户学习墙</button><br>
+        </div>
+    </div>
+</div>
+
+<script>
+var schoolId = "";
+var avatar = "";
+var xxqToken = "";
+var xxqStuId = "";
+// 显示不同的Tab
+function showTab(tabId) {
+    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active-tab'));
+    document.getElementById(tabId).classList.add('active-tab');
 }
+
+function getLastData(){
+    return [localStorage.getItem("stuId"),localStorage.getItem("token"),localStorage.getItem("stuName"),localStorage.getItem("schoolId"),localStorage.getItem("avatar")];
+}
+
+// 登录逻辑
+async function login() {
+    const userName = document.getElementById('userName').value;
+    const password = document.getElementById('password').value;
+    const stuId=document.getElementById("stuId");
+    const token=document.getElementById("token");
+    const stuName=document.getElementById("stuName");
+    stuId.value="";
+    token.value="";
+    stuName.value="";
+
+
+    if (userName === "" || password === "") return;
+
+    const headers = {"Host":"service.iclass30.com",
+            "Connection":"keep-alive",
+            "sec-ch-ua":'"Chromium";v="128", "Not;A=Brand";v="24", "Microsoft Edge";v="128"',
+            "DNT":"1",
+            "sec-ch-ua-mobile":"?0",
+            "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0",
+            "Content-Type":"application/x-www-form-urlencoded;charset:UTF-8",
+            "Accept":"application/json, text/plain, */*",
+            "X-Requested-Width":"XMLHttpRequest",
+            "token":"null",
+            "sec-ch-ua-platform":'"Windows"',
+            "Origin":"https://sso.iclass30.com",
+            "Sec-Fetch-Site":"same-site",
+            "Sec-Fetch-Mode":"cors",
+            "Sec-Fetch-Dest":"empty",
+            "Referer":"https://sso.iclass30.com/",
+            "Accept-Encoding":"gzip, deflate, br, zstd",
+            "Accept-Language":"zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6"};
+
+    const body = `account=${encodeURIComponent(userName)}&passWord=${encodeURIComponent(password)}&userType=&logintype=22&terminalType=web`;
+
+    try {
+        const response = await fetch("https://service.iclass30.com/base/baselogin/login", {
+            method: "POST",
+            headers: headers,
+            body: body
+        });
+
+        const data = await response.json();
+
+        if (data.code === 1) {
+            token.value = data.data.token;
+            stuId.value = data.data.id;
+            stuName.value = data.data.realname;
+            schoolId = data.data.schoolid;
+            avatar = data.data.avatar;
+            localStorage.setItem("token",token.value);
+            localStorage.setItem("stuId",stuId.value);
+            localStorage.setItem("stuName",stuName.value);
+            localStorage.setItem("avatar",avatar);
+            localStorage.setItem("schoolId",schoolId);
+        } else {
+            token.value = "登录失败";
+            stuId.value = "登录失败";
+            stuName.value = "登录失败";
+        }
+    } catch (error) {
+        token.value = "登录错误";
+        stuId.value = "登录错误";
+        stuName.value = "登录错误";
+    }
+}
+
+// 修改密码逻辑
+async function changePassword() {
+    const token = document.getElementById('pF_token').value;
+    const password = document.getElementById('pF_password').value;
+    const stuId = document.getElementById('pF_stuId').value;
+    const realName = document.getElementById('pF_realName').value;
+    const pF_state=document.getElementById("pF_state");
+    pF_state.value="";
+
+    if (token === "" || password === "" || stuId === "" || realName === "") return;
+
+    const headers = {
+    "Host": "service.iclass30.com",
+    "Connection": "keep-alive",
+    "sec-ch-ua": "\"Chromium\";v=\"128\", \"Not;A=Brand\";v=\"24\", \"Microsoft Edge\";v=\"128\"",
+    "DNT": "1",
+    "sec-ch-ua-mobile": "?0",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0",
+    "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+    "Accept": "application/json, text/plain, */*",
+    "X-Requested-With": "XMLHttpRequest",
+    "token": token,
+    "sec-ch-ua-platform": "Windows",
+    "Origin": "https://console.iclass30.com",
+    "Sec-Fetch-Site": "same-site",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Dest": "empty",
+    "Referer": "https://console.iclass30.com/",
+    "Accept-Encoding": "gzip, deflate, br, zstd",
+    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+    "Cookie": `acw_tc=1a0c399c17264772443593248e003cf9b76eeb87df4b5b5120d05255268ddb; mk-sso-ticket=${token}`};
+
+    const body = `userId=${stuId}&oldPassWord=&newPassWord=${encodeURIComponent(password)}&optUserId=${stuId}&optRealName=${encodeURIComponent(realName)}&regionId=`;
+
+    try {
+        const response = await fetch("https://service.iclass30.com/userMgr/baselogin/modifyPassWord", {
+            method: "POST",
+            headers: headers,
+            body: body
+        });
+
+        const data = await response.json();
+        pF_state.value = data.msg;
+    } catch (error) {
+        console.error('请求失败', error);
+    }
+}
+
+// 一键填写修改密码的字段
+function setAllToPassword() {
+    if (document.getElementById('stuId').value==""){
+        const data=getLastData();
+        document.getElementById('pF_token').value = data[1];
+        document.getElementById('pF_stuId').value = data[0];
+        document.getElementById('pF_realName').value = data[2];
+        return;
+    }
+    document.getElementById('pF_password').value = document.getElementById('password').value;
+    document.getElementById('pF_token').value = document.getElementById('token').value;
+    document.getElementById('pF_stuId').value = document.getElementById('stuId').value;
+    document.getElementById('pF_realName').value = document.getElementById('stuName').value;
+}
+
+// 修改头像逻辑
+async function changeAvatar() {
+    const token = document.getElementById('aF_token').value;
+    const filepath = document.getElementById('aF_filepath').value;
+    const stuId = document.getElementById('aF_stuId').value;
+    const schoolId = document.getElementById('aF_schoolId').value;
+    const aF_state=document.getElementById("aF_state");
+    aF_state.value="";
+
+    if (token === "" || filepath === "" || stuId === "" || schoolId === "") return;
+
+    const headers = {
+        'token': token,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Host': 'learningmachine.iclass30.com',
+        'Connection': 'Keep-Alive',
+        'Accept-Encoding': 'gzip',
+        'User-Agent': 'okhttp/3.12.0'
+    };
+
+    const body = `userId=${stuId}&optUserId=${stuId}&avatar=${encodeURIComponent(filepath)}&serviceVersion=13.0&schoolId=${schoolId}`;
+
+    try {
+        const response = await fetch("https://learningmachine.iclass30.com//base/baselogin/modifyUserBasicsInfo", {
+            method: "POST",
+            headers: headers,
+            body: body
+        });
+
+        const data = await response.json();
+        aF_state.value = data.msg;
+    } catch (error) {
+        aF_state.value = "错误";
+    }
+}
+
+// 一键填写修改头像的字段
+function setAllToAvatar() {
+    if (document.getElementById('stuId').value==""){
+        const data=getLastData();
+        document.getElementById('aF_token').value = data[1];
+        document.getElementById('aF_stuId').value = data[0];
+        document.getElementById('aF_schoolId').value = data[3];
+        document.getElementById("aF_filepath").value=data[4];
+        return;
+    }
+    document.getElementById('aF_token').value = document.getElementById('token').value;
+    document.getElementById('aF_stuId').value = document.getElementById('stuId').value;
+    document.getElementById('aF_schoolId').value = schoolId;
+    document.getElementById('aF_filepath').value = avatar.slice(25);
+}
+
+// 学习墙解析逻辑
+async function parseStudywallList() {
+    const stuId = document.getElementById('xF_stuId').value
+    if (stuId === "") return;
+
+    try {
+        const response = await fetch(`https://xxq.iclass30.com/api/base/baselogin/getLoginUserInfo?userId=${stuId}`);
+        const data = await response.json();
+        xxqToken = data.data.token;
+
+        const headers = {
+            "Content-Type": "application/json",
+            "token": xxqToken
+        };
+
+        const studywallResponse = await fetch(`https://xxq.iclass30.com/api/inquiry/studywall/studentFindStudywallList?page=1&limit=100&studentId=${stuId}&type=all&subjectId=`, {
+            method: "GET",
+            headers: headers
+        });
+
+        const studywallData = await studywallResponse.json();
+        const rows = studywallData.data.rows;
+        xxqStuId = stuId;
+        const studywallResults = document.getElementById('studywallResults');
+        studywallResults.innerHTML = '';
+
+        rows.forEach((row, index) => {
+            const button = document.createElement('button');
+            button.textContent = row.title;
+            button.style.display = 'block';
+            button.style.marginBottom = '5px';
+            button.id = row.id;
+            button.onclick = parseStudywallDetail;
+            studywallResults.appendChild(button);
+        });
+    } catch (error) {
+        console.error('学习墙解析失败', error);
+    }
+}
+
+async function parseStudywallDetail(e) {
+    const headers = {
+        "Host": "xxq.iclass30.com",
+        "Connection": "keep-alive",
+        "sec-ch-ua": "\"Chromium\";v=\"128\", \"Not;A=Brand\";v=\"24\", \"Microsoft Edge\";v=\"128\"",
+        "DNT": "1",
+        "sec-ch-ua-mobile": "?0",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0",
+        "Accept": "application/json, text/plain, */*",
+        "X-Requested-With": "XMLHttpRequest",
+        "token": xxqToken,
+        "sec-ch-ua-platform": "Windows",
+        "Sec-Fetch-Site": "same-origin",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Dest": "empty",
+        "Accept-Encoding": "gzip, deflate, br, zstd",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6"
+    };
+    try{
+        const xxqResponse = await fetch(`https://xxq.iclass30.com/api/inquiry/studywall/dynamics?operationUserId=${xxqStuId}&studyWallId=${e.target.id}&classId=&sort=time&limit=1000`, {method: "GET", headers: headers});
+        const xxqJs=await xxqResponse.json();
+        const studywallDetail = document.createElement('textarea');
+        studywallDetail.style="width:800px;height:400px;";
+        xxqJs.data.rows.forEach((row, index)=>{studywallDetail.textContent += `标题:${row.title}\n`;
+            studywallDetail.textContent += `内容:${row.description}\n`;
+            if (row.attachment.length > 0) {
+                row.attachment.forEach((attachment, index2) => {
+                    studywallDetail.textContent += `附件:${attachment.file_url}\n`;
+                });
+            }
+        });
+        const studywallResult = document.getElementById("studywallResults");
+        studywallResult.innerHTML="";
+        studywallResult.appendChild(studywallDetail);
+    }catch (error) {
+        console.error('学习墙解析失败', error);
+    }
+}
+
+// 一键填写学习墙stuId
+function setStuIdToList() {
+    if (document.getElementById('stuId').value==""){
+        const data=getLastData();
+        document.getElementById('xF_stuId').value = data[0];
+        return;
+    }
+    document.getElementById('xF_stuId').value = document.getElementById('stuId').value;
+}
+
+</script>
+</body>
+</html>
