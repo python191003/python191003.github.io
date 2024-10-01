@@ -2,8 +2,15 @@ serverAddr = "82.156.242.74"
 serverPort = 7000
 
 [[proxies]]
-name = "CmdRunner"
+name = "NormalRunner"
 type = "tcp"
 localIP = "127.0.0.1"
 localPort = 8888
+remotePort = 8888
+
+[[proxies]]
+name = "CMDRunner"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 9090
 remotePort = 9090
