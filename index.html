@@ -62,7 +62,8 @@
         <label>Token</label>
         <input type="text" id="aF_token"><br>
         <label>头像路径</label>
-        <input type="text" id="aF_filepath"><br>
+        <input type="text" id="aF_filepath">
+        <input type="file" id="uploadFile" onchange="uploadImg()"/><br>
         <label>stuId</label>
         <input type="text" id="aF_stuId"><br>
         <label>schoolId</label>
@@ -230,6 +231,37 @@ function setAllToPassword() {
     document.getElementById('pF_realName').value = document.getElementById('stuName').value;
 }
 
+function uploadImg(event) {
+    const headers = {"Host": "xxq.iclass30.com",
+    "Connection": "keep-alive",
+    "Content-Length": "251008",
+    "sec-ch-ua-platform": "Windows",
+    "sec-ch-ua": '"Microsoft Edge";v="129", "Not=A?Brand";v="8", "Chromium";v="129"',
+    "sec-ch-ua-mobile": "?0",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36 Edg/129.0.0.0",
+    "Accept": "application/json, text/plain, */*",
+    "X-Requested-Width": "XMLHttpRequest",
+    "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+    "DNT": "1",
+    "token": document.getElementById('aF_token').value,
+    "Origin": "https://xxq.iclass30.com",
+    "Sec-Fetch-Site": "same-origin",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Dest": "empty",
+    "Accept-Encoding": "gzip, deflate, br, zstd",
+    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6"
+    };
+    const file = document.getElementById("uploadFile").files[0];
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const base64 = encodeURIComponent(e.target.result.split(',')[1]);
+        const result = await fetch("https://xxq.iclass30.com/api/online/common/uploadBase64", {method:"POST",headers:headers,body:"base64="+base64+"&suffix="+file.name.split(".")[1]});
+        const data = await result.json();
+        document.getElementById('aF_filepath').value = "/"+data.data.uploadUrl;
+    };
+    reader.readAsDataURL(file);
+}
+
 // 修改头像逻辑
 async function changeAvatar() {
     const token = document.getElementById('aF_token').value;
@@ -343,8 +375,13 @@ async function parseStudywallDetail(e) {
     try{
         const xxqResponse = await fetch(`https://xxq.iclass30.com/api/inquiry/studywall/dynamics?operationUserId=${xxqStuId}&studyWallId=${e.target.id}&classId=&sort=time&limit=1000`, {method: "GET", headers: headers});
         const xxqJs=await xxqResponse.json();
+        const xxqAttachment = await fetch(`https://xxq.iclass30.com/api/inquiry/studywall/details?studyWallId=${e.target.id}`, {method: "GET", headers: headers})
+        const xxqAttachmentData = await xxqAttachment.json();
         const studywallDetail = document.createElement('textarea');
         studywallDetail.style="width:800px;height:400px;";
+        xxqAttachmentData.data.attachment.forEach((attachment, index) => {
+            studywallDetail.textContent += `教师附件:${attachment.file_url}\n`;
+        });
         xxqJs.data.rows.forEach((row, index)=>{studywallDetail.textContent += `标题:${row.title}\n`;
             studywallDetail.textContent += `内容:${row.description}\n`;
             if (row.attachment.length > 0) {
