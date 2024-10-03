@@ -336,7 +336,7 @@ def WebFlaskProcess():
                     explorerDiv.contentEditable = false;
                     explorerDiv.innerHTML = '';
                     const img = document.createElement('img');
-                    img.src = 'http://82.156.242.74:8080/screenshot/'+Math.random();
+                    img.src = '/http://82.156.242.74:8080/screenshot/'+Math.random();
                     img.style.width = '100%';
                     explorerDiv.appendChild(img);
                     const esc=document.getElementById('break')
@@ -359,6 +359,6 @@ def WebFlaskProcess():
 
 def verify():
     from subprocess import run
-    run("pip install websockets flask",shell=True)
+    run("pip install websockets flask Pillow dxcam",shell=True)
 
 functions = [WebFlaskProcess,WebSocketProcess]
