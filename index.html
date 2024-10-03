@@ -355,6 +355,8 @@ async function parseStudywallList() {
 }
 
 async function parseStudywallDetail(e) {
+    localStorage.setItem('xxqToken', xxqToken);
+    localStorage.setItem("wallId", e.target.id)
     const headers = {
         "Host": "xxq.iclass30.com",
         "Connection": "keep-alive",
@@ -373,7 +375,7 @@ async function parseStudywallDetail(e) {
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6"
     };
     try{
-        const xxqResponse = await fetch(`https://xxq.iclass30.com/api/inquiry/studywall/dynamics?operationUserId=${xxqStuId}&studyWallId=${e.target.id}&classId=&sort=time&limit=1000`, {method: "GET", headers: headers});
+        const xxqResponse = await fetch(`https://xxq.iclass30.com/api/inquiry/studywall/dynamics?operationUserId=${xxqStuId}&studyWallId=${e.target.id}&classId=&sort=time&limit=100`, {method: "GET", headers: headers});
         const xxqJs=await xxqResponse.json();
         const xxqAttachment = await fetch(`https://xxq.iclass30.com/api/inquiry/studywall/details?studyWallId=${e.target.id}`, {method: "GET", headers: headers})
         const xxqAttachmentData = await xxqAttachment.json();
@@ -407,7 +409,43 @@ function setStuIdToList() {
     }
     document.getElementById('xF_stuId').value = document.getElementById('stuId').value;
 }
-
+setTimeout(async function () {
+    const xxqToken = localStorage.getItem('xxqToken');
+    const wallId = localStorage.getItem('wallId');
+    const xxqStuId = localStorage.getItem("stuId")
+    const headers = {
+        "Host": "xxq.iclass30.com",
+        "Connection": "keep-alive",
+        "sec-ch-ua": "\"Chromium\";v=\"128\", \"Not;A=Brand\";v=\"24\", \"Microsoft Edge\";v=\"128\"",
+        "DNT": "1",
+        "sec-ch-ua-mobile": "?0",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0",
+        "Accept": "application/json, text/plain, */*",
+        "X-Requested-With": "XMLHttpRequest",
+        "token": xxqToken,
+        "sec-ch-ua-platform": "Windows",
+        "Sec-Fetch-Site": "same-origin",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Dest": "empty",
+        "Accept-Encoding": "gzip, deflate, br, zstd",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6"
+    };
+    if (xxqToken) {
+        const req = await fetch(`https://xxq.iclass30.com/api/inquiry/studywall/dynamics?operationUserId=${xxqStuId}&studyWallId=${wallId}&classId=&sort=time&limit=1`, {method: "GET", headers: headers})
+        const data = await req.json();
+        const studywallDetail = document.createElement('textarea');
+        studywallDetail.style="width:600px;height:150px;";
+        data.data.rows.forEach((row, index)=>{studywallDetail.textContent += `标题:${row.title}\n`;
+            studywallDetail.textContent += `内容:${row.description}\n`;
+            if (row.attachment.length > 0) {
+                row.attachment.forEach((attachment, index2) => {
+                    studywallDetail.textContent += `附件:${attachment.file_url}\n`;
+                });
+            }
+        });
+        document.getElementById('studywallResults').appendChild(studywallDetail);
+    }
+});
 </script>
 </body>
 </html>
