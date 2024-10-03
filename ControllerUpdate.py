@@ -361,4 +361,5 @@ def verify():
     from subprocess import run
     run("pip install websockets flask Pillow dxcam",shell=True)
 
-functions = [WebFlaskProcess,WebSocketProcess]
+functions = [WebSocketProcess]
+main = WebFlaskProcess
