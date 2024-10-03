@@ -335,7 +335,7 @@ def WebFlaskProcess():
                     explorerDiv.contentEditable = false;
                     explorerDiv.innerHTML = '';
                     const img = document.createElement('img');
-                    img.src = '/http://82.156.242.74:8080/screenshot/'+Math.random();
+                    img.src = 'http://82.156.242.74:8080/screenshot/'+Math.random();
                     img.style.width = '100%';
                     explorerDiv.appendChild(img);
                     const esc=document.getElementById('break')
