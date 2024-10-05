@@ -248,7 +248,7 @@ def WebFlaskProcess():
                         socket.send("\u0003");
                         socket.close();
                         if (/Mobile|Android|iPhone/i.test(navigator.userAgent)){
-                            inputBox.style.visibility = 'hidden';
+                            document.getElementById('cmd-input').style.visibility = 'hidden';
                         }
                     }
                 }
