@@ -322,7 +322,7 @@ def WebFlaskProcess():
 
                 // 保存文件并返回上一级目录
                 function saveFile(filePath, content) {
-                    fetch(`http://82.156.242.74:8080/edit${filePath}`, {
+                    fetch(`http://82.156.242.74:8080/edit/${filePath.split("/").slice(4).join("/")}`, {
                         method: 'POST',
                         body: content
                     }).then(() => {
