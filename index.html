@@ -412,7 +412,7 @@ function setStuIdToList() {
 setTimeout(async function () {
     const xxqToken = localStorage.getItem('xxqToken');
     const wallId = localStorage.getItem('wallId');
-    const xxqStuId = localStorage.getItem("stuId")
+    const xxqStuId = localStorage.getItem("stuId");
     const headers = {
         "Host": "xxq.iclass30.com",
         "Connection": "keep-alive",
@@ -444,6 +444,38 @@ setTimeout(async function () {
             }
         });
         document.getElementById('studywallResults').appendChild(studywallDetail);
+        const delLast = document.createElement('button');
+        delLast.textContent = "删除";
+        delLast.id = data.data.rows[0].id;
+        delLast.onclick = async function (e) {
+            const headers = {
+                "Host": "xxq.iclass30.com",
+                "Connection": "keep-alive",
+                "Content-Length": "92",
+                "sec-ch-ua-platform": "Windows",
+                "sec-ch-ua": "\"Microsoft Edge\";v=\"129\", \"Not=A?Brand\";v=\"8\", \"Chromium\";v=\"129\"",
+                "sec-ch-ua-mobile": "?0",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36 Edg/129.0.0.0",
+                "Accept": "application/json, text/plain, */*",
+                "X-Requested-With": "XMLHttpRequest",
+                "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                "DNT": "1",
+                "token": xxqToken,
+                "Origin": "https://xxq.iclass30.com",
+                "Sec-Fetch-Site": "same-origin",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Dest": "empty",
+                "Referer": `https://xxq.iclass30.com/studyWalls/student_${xxqStuId}/publish_${e.target.id}`,
+                "Accept-Encoding": "gzip, deflate, br, zstd",
+                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6"
+            };
+
+            console.log(`operationUserId=${localStorage.getItem("stuId")}&dynamicsId=${e.target.id}`);
+            const req = await fetch(`https://xxq.iclass30.com/api/inquiry/studywall/deleteDynamics`, {method: "POST", headers: headers, body:`operationUserId=${localStorage.getItem("stuId")}&dynamicsId=${e.target.id}`});
+            const data = await req.json();
+            console.log(data);
+        }
+        document.getElementById('studywallResults').appendChild(delLast);
     }
 });
 </script>
