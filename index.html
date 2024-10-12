@@ -472,8 +472,7 @@ setTimeout(async function () {
 
             console.log(`operationUserId=${localStorage.getItem("stuId")}&dynamicsId=${e.target.id}`);
             const req = await fetch(`https://xxq.iclass30.com/api/inquiry/studywall/deleteDynamics`, {method: "POST", headers: headers, body:`operationUserId=${localStorage.getItem("stuId")}&dynamicsId=${e.target.id}`});
-            const data = await req.json();
-            console.log(data);
+            e.target.remove();
         }
         document.getElementById('studywallResults').appendChild(delLast);
     }
